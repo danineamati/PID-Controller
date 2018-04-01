@@ -142,50 +142,26 @@ def makePlot(controller, setPointCurve, active = False, legend = False):
         plt.title("Measurement against time.")
         plt.xlabel("Time (ticks)")
         plt.ylabel("Measurement")
-        
-        plt.xlim(0, len(controller.allData) - 1)
-        #plt.axhline(controller.getSetPt(), color = 'red')
-
-        axes = plt.gca()
-        ymin, ymax = axes.get_ylim()
-
-        plt.text((len(controller.allData) - 1) * (3/5), ymax * 4/5, \
-                 controller.formatParameters(), dict(size = 10))
 
         plt.plot(setPointCurve[0], setPointCurve[1])
+
+        plt.legend([controller.formatParameters(), "Set Point"], loc = 'best')
 
         plt.show()
 
     else:
         plt.ion()
-        handle = plt.figure(1)
+        handle = plt.figure(1,figsize=(8, 6))
         plt.plot(controller.allData)
         plt.title("Measurement against time.")
         plt.xlabel("Time (ticks)")
         plt.ylabel("Measurement")
-        
-        plt.xlim(0, len(controller.allData) - 1)
-        #plt.axhline(controller.getSetPt(), color = 'red')
-
-        axes = plt.gca()
-        ymin, ymax = axes.get_ylim()
-
-        if legend:
-            plt.figtext(0.6, 0.4, \
-                 controller.formatParameters(), dict(size = 10))
-            comment2_txt = '''\
-                Notes: Sales for Product A have been flat through the year. We
-                expect improvement after the new release in Q2.
-                '''
-            fig_txt = tw.fill(tw.dedent(comment2_txt.rstrip() ), width=80)
-
-            # The YAxis value is -0.07 to push the text down slightly
-            plt.figtext(0.5, 0, fig_txt, horizontalalignment='center',
-                        fontsize=12, multialignment='left',
-                        bbox=dict(boxstyle="round", facecolor='#D8D8D8',
-                                  ec="0.5", pad=0.5, alpha=1), fontweight='bold')
 
         plt.plot(setPointCurve)
+
+        if legend:
+            plt.legend([controller.formatParameters(), "Set Point"], \
+                       loc = 'best') 
 
         handle.tight_layout()
 
@@ -210,8 +186,16 @@ def activeloop(controller):
     setPointCurve = []
     Legend = True
     start_time = time.time()
+    input("Ready? ")
     
     while time.time() - start_time < 100000:
+        controller.addDataPoint(controller.lastData + \
+                                controller.output())
+        setPointCurve.append(controller.getSetPt())
+        handle = makePlot(controller, setPointCurve, \
+                          active = True, legend = Legend)
+        Legend = False
+
         if time.time() - start_time > 1:
             newSet = input("New Setpoint: ")
             start_time = time.time()
@@ -224,13 +208,6 @@ def activeloop(controller):
                 controller.updateSetPoint(float(newSet))
             except ValueError:
                 pass
-        
-        controller.addDataPoint(controller.lastData + \
-                                controller.output())
-        setPointCurve.append(controller.getSetPt())
-        handle = makePlot(controller, setPointCurve, \
-                          active = True, legend = Legend)
-        Legend = False
 
 def main():
     ''' This is the main function that creates an instance of the
@@ -245,7 +222,7 @@ def main():
 ##    loop(control)
 ##
 ##    makePlot(control, ([0, 50], [500, 500]))
-##
+
 ##    current = control.lastData
 ##
 ##    control.updateSetPoint(600)
